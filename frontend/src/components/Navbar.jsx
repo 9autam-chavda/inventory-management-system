@@ -20,10 +20,6 @@ function Navbar() {
           Inventory Management System
         </h4>
 
-        <small className="navbar-subtitle">
-          Dashboard Overview
-        </small>
-
       </div>
 
       <div className="d-flex align-items-center gap-3">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaEnvelope, FaLock, FaWarehouse } from "react-icons/fa";
 import authService from "../services/authService";
 
@@ -106,6 +106,13 @@ function Login() {
             </button>
 
           </form>
+
+          <p className="auth-switch-text mt-4 mb-0 text-center">
+            Don&apos;t have an account?{" "}
+            <Link className="auth-switch-link" to="/register">
+              Register
+            </Link>
+          </p>
         </div>
       </div>
     </div>
