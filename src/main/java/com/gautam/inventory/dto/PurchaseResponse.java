@@ -7,6 +7,7 @@ public class PurchaseResponse {
 
     private Long id;
     private String supplierName;
+    private Long productId;
     private String productName;
     private Integer quantity;
     private BigDecimal purchasePrice;
@@ -33,6 +34,14 @@ public class PurchaseResponse {
 
     public String getProductName() {
         return productName;
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Long productId) {
+        this.productId = productId;
     }
 
     public void setProductName(String productName) {

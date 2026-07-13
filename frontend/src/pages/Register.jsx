@@ -10,6 +10,7 @@ import {
   FaWarehouse,
 } from "react-icons/fa";
 import authService from "../services/authService";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const initialFormData = {
   name: "",
@@ -106,12 +107,7 @@ function Register() {
         navigate("/login");
       }, 1000);
     } catch (err) {
-      const backendMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Registration failed. Please try again.";
-
-      setServerError(backendMessage);
+      setServerError(getErrorMessage(err, "Registration failed. Please try again."));
     } finally {
       setLoading(false);
     }

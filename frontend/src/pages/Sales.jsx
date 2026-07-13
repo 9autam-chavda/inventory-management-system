@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaEdit, FaTrash, FaPlus, FaSearch } from "react-icons/fa";
 import saleService from "../services/saleService";
 import productService from "../services/productService";
 import PageHeader from "../components/PageHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -15,7 +16,6 @@ const Sales = () => {
   // State
   // -------------------------------
   const [sales, setSales] = useState([]);
-  const [filteredSales, setFilteredSales] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,11 +41,9 @@ const Sales = () => {
       setLoading(true);
       const data = await saleService.getAll();
       setSales(data || []);
-      setFilteredSales(data || []);
     } catch (error) {
       console.error("Failed to load sales:", error);
       setSales([]);
-      setFilteredSales([]);
     } finally {
       setLoading(false);
     }
@@ -69,22 +67,19 @@ const Sales = () => {
   // -------------------------------
   // Search (real-time, client-side, case-insensitive)
   // -------------------------------
-  useEffect(() => {
+  const filteredSales = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
     if (term === "") {
-      setFilteredSales(sales);
-      return;
+      return sales;
     }
 
-    const filtered = sales.filter(
+    return sales.filter(
       (sale) =>
         sale.customerName?.toLowerCase().includes(term) ||
         sale.productName?.toLowerCase().includes(term)
     );
-
-    setFilteredSales(filtered);
-  }, [searchTerm, sales]);
+  }, [sales, searchTerm]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -123,13 +118,9 @@ const Sales = () => {
     setIsEditMode(true);
     setSelectedSaleId(sale.id);
 
-    const matchedProduct = products.find(
-      (product) => product.name === sale.productName
-    );
-
     setFormData({
       customerName: sale.customerName || "",
-      productId: sale.productId ?? matchedProduct?.id ?? "",
+      productId: sale.productId ?? "",
       quantity: sale.quantity ?? "",
       sellingPrice: sale.sellingPrice ?? "",
       saleDate: sale.saleDate || "",
@@ -223,7 +214,7 @@ const Sales = () => {
       console.error("Failed to save sale:", error);
       setFormErrors((prev) => ({
         ...prev,
-        general: "Something went wrong while saving. Please try again.",
+        general: getErrorMessage(error, "Something went wrong while saving. Please try again."),
       }));
     } finally {
       setSaving(false);
@@ -245,7 +236,7 @@ const Sales = () => {
       await loadSales();
     } catch (error) {
       console.error("Failed to delete sale:", error);
-      alert("Failed to delete sale. Please try again.");
+      alert(getErrorMessage(error, "Failed to delete sale. Please try again."));
     }
   };
 
@@ -253,24 +244,21 @@ const Sales = () => {
   // Render
   // -------------------------------
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid px-0">
       <PageHeader
         title="Sales"
         subtitle="Manage your inventory sales"
       />
 
-      <div className="card border-0 shadow-sm rounded-4 mt-4">
-        <div className="card-body p-4">
+      <div className="content-card">
+        <div className="content-card-body">
           {/* Toolbar */}
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-4">
-            <div className="position-relative" style={{ maxWidth: "350px", width: "100%" }}>
-              <FaSearch
-                className="position-absolute text-muted"
-                style={{ top: "50%", left: "14px", transform: "translateY(-50%)" }}
-              />
+          <div className="table-toolbar">
+            <div className="search-box">
+              <FaSearch className="input-icon" />
               <input
                 type="text"
-                className="form-control ps-5 rounded-pill"
+                className="form-control input-with-icon"
                 placeholder="Search sales..."
                 value={searchTerm}
                 onChange={handleSearchChange}
@@ -279,7 +267,7 @@ const Sales = () => {
 
             <button
               type="button"
-              className="btn btn-primary rounded-pill px-4 d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              className="btn btn-primary btn-app d-flex align-items-center justify-content-center gap-2"
               onClick={openAddModal}
             >
               <FaPlus size={14} />
@@ -291,10 +279,10 @@ const Sales = () => {
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="table-responsive">
+            <div className="table-shell">
               <table className="table table-hover align-middle mb-0">
                 <thead>
-                  <tr className="text-muted small text-uppercase">
+                  <tr>
                     <th style={{ width: "80px" }}>ID</th>
                     <th>Customer Name</th>
                     <th>Product Name</th>
@@ -309,7 +297,7 @@ const Sales = () => {
                 <tbody>
                   {filteredSales.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="text-center text-muted py-5">
+                      <td colSpan="7" className="empty-state">
                         No Sales Found
                       </td>
                     </tr>
@@ -330,8 +318,7 @@ const Sales = () => {
                           <div className="d-flex justify-content-end gap-2">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: "34px", height: "34px" }}
+                              className="btn btn-sm btn-outline-primary btn-edit btn-action"
                               title="Edit"
                               onClick={() => openEditModal(sale)}
                             >
@@ -339,8 +326,7 @@ const Sales = () => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: "34px", height: "34px" }}
+                              className="btn btn-sm btn-outline-danger btn-action"
                               title="Delete"
                               onClick={() => deleteSale(sale)}
                             >
@@ -368,7 +354,7 @@ const Sales = () => {
             style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           >
             <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content border-0 shadow rounded-4">
+              <div className="modal-content border-0">
                 <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title fw-semibold">
                     {isEditMode ? "Edit Sale" : "Add Sale"}
@@ -383,7 +369,7 @@ const Sales = () => {
 
                 <div className="modal-body pt-3">
                   {formErrors.general && (
-                    <div className="alert alert-danger py-2 rounded-3">
+                    <div className="alert alert-danger py-2">
                       {formErrors.general}
                     </div>
                   )}
@@ -396,7 +382,7 @@ const Sales = () => {
                       id="customerName"
                       name="customerName"
                       type="text"
-                      className={`form-control rounded-3 ${
+                      className={`form-control ${
                         formErrors.customerName ? "is-invalid" : ""
                       }`}
                       placeholder="Enter customer name"
@@ -418,7 +404,7 @@ const Sales = () => {
                     <select
                       id="productId"
                       name="productId"
-                      className={`form-select rounded-3 ${
+                      className={`form-select ${
                         formErrors.productId ? "is-invalid" : ""
                       }`}
                       value={formData.productId}
@@ -449,7 +435,7 @@ const Sales = () => {
                         type="number"
                         min="1"
                         step="1"
-                        className={`form-control rounded-3 ${
+                        className={`form-control ${
                           formErrors.quantity ? "is-invalid" : ""
                         }`}
                         placeholder="0"
@@ -473,7 +459,7 @@ const Sales = () => {
                         type="number"
                         min="0"
                         step="0.01"
-                        className={`form-control rounded-3 ${
+                        className={`form-control ${
                           formErrors.sellingPrice ? "is-invalid" : ""
                         }`}
                         placeholder="0.00"
@@ -496,7 +482,7 @@ const Sales = () => {
                       id="saleDate"
                       name="saleDate"
                       type="date"
-                      className={`form-control rounded-3 ${
+                      className={`form-control ${
                         formErrors.saleDate ? "is-invalid" : ""
                       }`}
                       value={formData.saleDate}
@@ -513,7 +499,7 @@ const Sales = () => {
                 <div className="modal-footer border-0 pt-0">
                   <button
                     type="button"
-                    className="btn btn-light rounded-pill px-4"
+                    className="btn btn-light btn-app"
                     onClick={closeModal}
                     disabled={saving}
                   >
@@ -521,7 +507,7 @@ const Sales = () => {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-primary rounded-pill px-4"
+                    className="btn btn-primary btn-app"
                     onClick={saveSale}
                     disabled={saving}
                   >

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.gautam.inventory.dto.InvoiceResponse;
 import com.gautam.inventory.entity.Invoice;
 import com.gautam.inventory.entity.Sale;
+import com.gautam.inventory.exception.BadRequestException;
 import com.gautam.inventory.exception.ResourceNotFoundException;
 import com.gautam.inventory.repository.InvoiceRepository;
 import com.gautam.inventory.repository.SaleRepository;
@@ -26,6 +27,10 @@ public class InvoiceService {
 
     // Generate Invoice
     public InvoiceResponse generateInvoice(Long saleId) {
+
+        if (invoiceRepository.existsBySaleId(saleId)) {
+            throw new BadRequestException("Invoice has already been generated for this sale");
+        }
 
         Sale sale = saleRepository.findById(saleId)
                 .orElseThrow(() ->

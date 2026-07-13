@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaEdit, FaTrash, FaPlus, FaSearch } from "react-icons/fa";
 import categoryService from "../services/categoryService";
 import PageHeader from "../components/PageHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const Categories = () => {
   // -------------------------------
   // State
   // -------------------------------
   const [categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -28,37 +28,33 @@ const Categories = () => {
       setLoading(true);
       const data = await categoryService.getAll();
       setCategories(data || []);
-      setFilteredCategories(data || []);
     } catch (error) {
       console.error("Failed to load categories:", error);
       setCategories([]);
-      setFilteredCategories([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCategories();
   }, [loadCategories]);
 
   // -------------------------------
   // Search (real-time, client-side, case-insensitive)
   // -------------------------------
-  useEffect(() => {
+  const filteredCategories = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
     if (term === "") {
-      setFilteredCategories(categories);
-      return;
+      return categories;
     }
 
-    const filtered = categories.filter((category) =>
+    return categories.filter((category) =>
       category.name?.toLowerCase().includes(term)
     );
-
-    setFilteredCategories(filtered);
-  }, [searchTerm, categories]);
+  }, [categories, searchTerm]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -116,7 +112,7 @@ const Categories = () => {
       closeModal();
     } catch (error) {
       console.error("Failed to save category:", error);
-      setFormError("Something went wrong while saving. Please try again.");
+      setFormError(getErrorMessage(error, "Something went wrong while saving. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -137,7 +133,7 @@ const Categories = () => {
       await loadCategories();
     } catch (error) {
       console.error("Failed to delete category:", error);
-      alert("Failed to delete category. Please try again.");
+      alert(getErrorMessage(error, "Failed to delete category. Please try again."));
     }
   };
 
@@ -145,24 +141,21 @@ const Categories = () => {
   // Render
   // -------------------------------
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid px-0">
       <PageHeader
         title="Categories"
         subtitle="Manage your inventory categories"
       />
 
-      <div className="card border-0 shadow-sm rounded-4 mt-4">
-        <div className="card-body p-4">
+      <div className="content-card">
+        <div className="content-card-body">
           {/* Toolbar */}
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-4">
-            <div className="position-relative" style={{ maxWidth: "350px", width: "100%" }}>
-              <FaSearch
-                className="position-absolute text-muted"
-                style={{ top: "50%", left: "14px", transform: "translateY(-50%)" }}
-              />
+          <div className="table-toolbar">
+            <div className="search-box">
+              <FaSearch className="input-icon" />
               <input
                 type="text"
-                className="form-control ps-5 rounded-pill"
+                className="form-control input-with-icon"
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={handleSearchChange}
@@ -171,7 +164,7 @@ const Categories = () => {
 
             <button
               type="button"
-              className="btn btn-primary rounded-pill px-4 d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              className="btn btn-primary btn-app d-flex align-items-center justify-content-center gap-2"
               onClick={openAddModal}
             >
               <FaPlus size={14} />
@@ -183,10 +176,10 @@ const Categories = () => {
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="table-responsive">
+            <div className="table-shell">
               <table className="table table-hover align-middle mb-0">
                 <thead>
-                  <tr className="text-muted small text-uppercase">
+                  <tr>
                     <th style={{ width: "80px" }}>ID</th>
                     <th>Category Name</th>
                     <th className="text-end" style={{ width: "150px" }}>
@@ -197,7 +190,7 @@ const Categories = () => {
                 <tbody>
                   {filteredCategories.length === 0 ? (
                     <tr>
-                      <td colSpan="3" className="text-center text-muted py-5">
+                      <td colSpan="3" className="empty-state">
                         No Categories Found
                       </td>
                     </tr>
@@ -210,8 +203,7 @@ const Categories = () => {
                           <div className="d-flex justify-content-end gap-2">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: "34px", height: "34px" }}
+                              className="btn btn-sm btn-outline-primary btn-edit btn-action"
                               title="Edit"
                               onClick={() => openEditModal(category)}
                             >
@@ -219,8 +211,7 @@ const Categories = () => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: "34px", height: "34px" }}
+                              className="btn btn-sm btn-outline-danger btn-action"
                               title="Delete"
                               onClick={() => deleteCategory(category)}
                             >
@@ -248,7 +239,7 @@ const Categories = () => {
             style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           >
             <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content border-0 shadow rounded-4">
+              <div className="modal-content border-0">
                 <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title fw-semibold">
                     {isEditMode ? "Edit Category" : "Add Category"}
@@ -268,7 +259,7 @@ const Categories = () => {
                   <input
                     id="categoryName"
                     type="text"
-                    className={`form-control rounded-3 ${formError ? "is-invalid" : ""}`}
+                    className={`form-control ${formError ? "is-invalid" : ""}`}
                     placeholder="Enter category name"
                     value={categoryName}
                     onChange={(e) => {
@@ -285,7 +276,7 @@ const Categories = () => {
                 <div className="modal-footer border-0 pt-0">
                   <button
                     type="button"
-                    className="btn btn-light rounded-pill px-4"
+                    className="btn btn-light btn-app"
                     onClick={closeModal}
                     disabled={saving}
                   >
@@ -293,7 +284,7 @@ const Categories = () => {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-primary rounded-pill px-4"
+                    className="btn btn-primary btn-app"
                     onClick={saveCategory}
                     disabled={saving}
                   >

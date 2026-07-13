@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEnvelope, FaLock, FaWarehouse } from "react-icons/fa";
 import authService from "../services/authService";
+import { getErrorMessage } from "../utils/errorMessage";
 
 function Login() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ function Login() {
 
       navigate("/dashboard");
     } catch (err) {
-      setError("Invalid email or password.");
+      setError(getErrorMessage(err, "Invalid email or password."));
       console.error(err);
     } finally {
       setLoading(false);

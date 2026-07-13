@@ -8,6 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
     @Query("SELECT COALESCE(SUM(p.quantity), 0) FROM Product p")
     Integer getTotalStock();
 

@@ -10,6 +10,7 @@ import com.gautam.inventory.dto.SaleResponse;
 import com.gautam.inventory.dto.UpdateSaleRequest;
 import com.gautam.inventory.entity.Product;
 import com.gautam.inventory.entity.Sale;
+import com.gautam.inventory.exception.BadRequestException;
 import com.gautam.inventory.exception.ResourceNotFoundException;
 import com.gautam.inventory.repository.ProductRepository;
 import com.gautam.inventory.repository.SaleRepository;
@@ -34,13 +35,13 @@ public class SaleService {
                         new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
         if (product.getQuantity() < request.getQuantity()) {
-            throw new IllegalArgumentException("Insufficient stock available");
+            throw new BadRequestException("Insufficient stock available");
         }
 
         product.setQuantity(product.getQuantity() - request.getQuantity());
 
         Sale sale = new Sale();
-        sale.setCustomerName(request.getCustomerName());
+        sale.setCustomerName(request.getCustomerName().trim());
         sale.setQuantity(request.getQuantity());
         sale.setSellingPrice(request.getSellingPrice());
         sale.setSaleDate(request.getSaleDate());
@@ -85,12 +86,12 @@ public class SaleService {
                         new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
         if (newProduct.getQuantity() < request.getQuantity()) {
-            throw new IllegalArgumentException("Insufficient stock available");
+            throw new BadRequestException("Insufficient stock available");
         }
 
         newProduct.setQuantity(newProduct.getQuantity() - request.getQuantity());
 
-        sale.setCustomerName(request.getCustomerName());
+        sale.setCustomerName(request.getCustomerName().trim());
         sale.setQuantity(request.getQuantity());
         sale.setSellingPrice(request.getSellingPrice());
         sale.setSaleDate(request.getSaleDate());
@@ -124,6 +125,7 @@ public class SaleService {
 
         response.setId(sale.getId());
         response.setCustomerName(sale.getCustomerName());
+        response.setProductId(sale.getProduct().getId());
         response.setProductName(sale.getProduct().getName());
         response.setQuantity(sale.getQuantity());
         response.setSellingPrice(sale.getSellingPrice());

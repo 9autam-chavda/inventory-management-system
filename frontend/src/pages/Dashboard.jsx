@@ -31,17 +31,14 @@ function Dashboard() {
 
   if (!dashboard) {
     return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ height: "300px" }}
-      >
+      <div className="d-flex justify-content-center align-items-center min-vh-50">
         <div className="spinner-border text-primary"></div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="container-fluid px-0">
 
       <div className="dashboard-heading">
         <h2 className="page-title">Dashboard</h2>
@@ -84,14 +81,14 @@ function Dashboard() {
           title="Invoices"
           value={dashboard.totalInvoices}
           icon={<FaFileInvoice />}
-          color="#7c3aed"
+          color="#2563eb"
         />
 
         <DashboardCard
           title="Total Stock"
           value={dashboard.totalStock}
           icon={<FaWarehouse />}
-          color="#0891b2"
+          color="#16a34a"
         />
 
         <DashboardCard

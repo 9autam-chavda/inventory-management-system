@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.gautam.inventory.entity.User;
+import com.gautam.inventory.exception.BadRequestException;
 import com.gautam.inventory.repository.UserRepository;
 import com.gautam.inventory.security.CustomUserDetailsService;
 import com.gautam.inventory.security.JwtService;
@@ -39,8 +40,6 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request) {
 
-        System.out.println("Login method called");
-
         authenticationManager.authenticate(
 
                 new UsernamePasswordAuthenticationToken(
@@ -66,11 +65,17 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
 
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new BadRequestException("Email is already registered");
+        }
+
         User user = new User();
 
-        user.setName(request.getName());
+        user.setName(request.getName().trim());
 
-        user.setEmail(request.getEmail());
+        user.setEmail(email);
 
         user.setPassword(
                 passwordEncoder.encode(

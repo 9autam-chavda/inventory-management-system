@@ -6,4 +6,6 @@ import com.gautam.inventory.entity.Invoice;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
+    boolean existsBySaleId(Long saleId);
+
 }

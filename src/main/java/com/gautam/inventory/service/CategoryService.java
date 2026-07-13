@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.gautam.inventory.dto.CreateCategoryRequest;
 import com.gautam.inventory.dto.UpdateCategoryRequest;
 import com.gautam.inventory.entity.Category;
+import com.gautam.inventory.exception.BadRequestException;
 import com.gautam.inventory.exception.ResourceNotFoundException;
 import com.gautam.inventory.repository.CategoryRepository;
 
@@ -22,13 +23,15 @@ public class CategoryService {
     // Create Category
     public Category createCategory(CreateCategoryRequest request) {
 
-        if (categoryRepository.existsByName(request.getName())) {
-            throw new RuntimeException("Category already exists with name: " + request.getName());
+        String name = request.getName().trim();
+
+        if (categoryRepository.existsByNameIgnoreCase(name)) {
+            throw new BadRequestException("Category already exists with name: " + name);
         }
 
         Category category = Category.builder()
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(name)
+                .description(cleanOptionalText(request.getDescription()))
                 .build();
 
         return categoryRepository.save(category);
@@ -53,15 +56,16 @@ public class CategoryService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Category not found with id: " + id));
 
-        if (!category.getName().equals(request.getName())
-                && categoryRepository.existsByName(request.getName())) {
+        String name = request.getName().trim();
 
-            throw new RuntimeException(
-                    "Category already exists with name: " + request.getName());
+        if (categoryRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+
+            throw new BadRequestException(
+                    "Category already exists with name: " + name);
         }
 
-        category.setName(request.getName());
-        category.setDescription(request.getDescription());
+        category.setName(name);
+        category.setDescription(cleanOptionalText(request.getDescription()));
 
         return categoryRepository.save(category);
     }
@@ -74,6 +78,10 @@ public class CategoryService {
                         new ResourceNotFoundException("Category not found with id: " + id));
 
         categoryRepository.delete(category);
+    }
+
+    private String cleanOptionalText(String value) {
+        return value == null ? null : value.trim();
     }
 
 }

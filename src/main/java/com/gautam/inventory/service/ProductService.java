@@ -9,6 +9,7 @@ import com.gautam.inventory.dto.ProductResponse;
 import com.gautam.inventory.dto.UpdateProductRequest;
 import com.gautam.inventory.entity.Category;
 import com.gautam.inventory.entity.Product;
+import com.gautam.inventory.exception.BadRequestException;
 import com.gautam.inventory.exception.ResourceNotFoundException;
 import com.gautam.inventory.repository.CategoryRepository;
 import com.gautam.inventory.repository.ProductRepository;
@@ -28,13 +29,19 @@ public class ProductService {
     // Create Product
     public ProductResponse createProduct(CreateProductRequest request) {
 
+        String name = request.getName().trim();
+
+        if (productRepository.existsByNameIgnoreCase(name)) {
+            throw new BadRequestException("Product already exists with name: " + name);
+        }
+
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found with id: " + request.getCategoryId()));
 
         Product product = Product.builder()
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(name)
+                .description(cleanOptionalText(request.getDescription()))
                 .price(request.getPrice())
                 .quantity(request.getQuantity())
                 .category(category)
@@ -71,12 +78,18 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Product not found with id: " + id));
 
+        String name = request.getName().trim();
+
+        if (productRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new BadRequestException("Product already exists with name: " + name);
+        }
+
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found with id: " + request.getCategoryId()));
 
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
+        product.setName(name);
+        product.setDescription(cleanOptionalText(request.getDescription()));
         product.setPrice(request.getPrice());
         product.setQuantity(request.getQuantity());
         product.setCategory(category);
@@ -110,5 +123,9 @@ public class ProductService {
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .build();
+    }
+
+    private String cleanOptionalText(String value) {
+        return value == null ? null : value.trim();
     }
 }

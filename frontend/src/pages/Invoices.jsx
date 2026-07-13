@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaTrash, FaPlus, FaSearch, FaFileInvoice, FaFilePdf } from "react-icons/fa";
 import invoiceService from "../services/invoiceService";
 import saleService from "../services/saleService";
 import PageHeader from "../components/PageHeader";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { generateInvoicePDF } from "../utils/pdfGenerator";
+import { getErrorMessage } from "../utils/errorMessage";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -16,7 +17,6 @@ const Invoices = () => {
   // State
   // -------------------------------
   const [invoices, setInvoices] = useState([]);
-  const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,11 +36,9 @@ const Invoices = () => {
       setLoading(true);
       const data = await invoiceService.getAll();
       setInvoices(data || []);
-      setFilteredInvoices(data || []);
     } catch (error) {
       console.error("Failed to load invoices:", error);
       setInvoices([]);
-      setFilteredInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -63,23 +61,20 @@ const Invoices = () => {
   // -------------------------------
   // Search Invoices (real-time, client-side, case-insensitive)
   // -------------------------------
-  useEffect(() => {
+  const filteredInvoices = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
     if (term === "") {
-      setFilteredInvoices(invoices);
-      return;
+      return invoices;
     }
 
-    const filtered = invoices.filter(
+    return invoices.filter(
       (invoice) =>
         invoice.invoiceNumber?.toLowerCase().includes(term) ||
         invoice.customerName?.toLowerCase().includes(term) ||
         invoice.productName?.toLowerCase().includes(term)
     );
-
-    setFilteredInvoices(filtered);
-  }, [searchTerm, invoices]);
+  }, [invoices, searchTerm]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -154,7 +149,7 @@ const Invoices = () => {
       console.error("Failed to generate invoice:", error);
       setFormErrors((prev) => ({
         ...prev,
-        general: "Something went wrong while generating the invoice. Please try again.",
+        general: getErrorMessage(error, "Something went wrong while generating the invoice. Please try again."),
       }));
     } finally {
       setSaving(false);
@@ -176,7 +171,7 @@ const Invoices = () => {
       await loadInvoices();
     } catch (error) {
       console.error("Failed to delete invoice:", error);
-      alert("Failed to delete invoice. Please try again.");
+      alert(getErrorMessage(error, "Failed to delete invoice. Please try again."));
     }
   };
 
@@ -196,24 +191,21 @@ const Invoices = () => {
   // Render
   // -------------------------------
   return (
-    <div className="container-fluid py-4">
+    <div className="container-fluid px-0">
       <PageHeader
         title="Invoices"
         subtitle="Generate and manage sales invoices"
       />
 
-      <div className="card border-0 shadow-sm rounded-4 mt-4">
-        <div className="card-body p-4">
+      <div className="content-card">
+        <div className="content-card-body">
           {/* Toolbar */}
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-4">
-            <div className="position-relative" style={{ maxWidth: "350px", width: "100%" }}>
-              <FaSearch
-                className="position-absolute text-muted"
-                style={{ top: "50%", left: "14px", transform: "translateY(-50%)" }}
-              />
+          <div className="table-toolbar">
+            <div className="search-box">
+              <FaSearch className="input-icon" />
               <input
                 type="text"
-                className="form-control ps-5 rounded-pill"
+                className="form-control input-with-icon"
                 placeholder="Search invoices..."
                 value={searchTerm}
                 onChange={handleSearchChange}
@@ -222,7 +214,7 @@ const Invoices = () => {
 
             <button
               type="button"
-              className="btn btn-primary rounded-pill px-4 d-flex align-items-center justify-content-center gap-2 shadow-sm"
+              className="btn btn-primary btn-app d-flex align-items-center justify-content-center gap-2"
               onClick={openGenerateModal}
             >
               <FaPlus size={14} />
@@ -234,10 +226,10 @@ const Invoices = () => {
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="table-responsive">
+            <div className="table-shell">
               <table className="table table-hover align-middle mb-0">
                 <thead>
-                  <tr className="text-muted small text-uppercase">
+                  <tr>
                     <th style={{ width: "80px" }}>ID</th>
                     <th>Invoice Number</th>
                     <th>Customer Name</th>
@@ -254,7 +246,7 @@ const Invoices = () => {
                 <tbody>
                   {filteredInvoices.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="text-center text-muted py-5">
+                      <td colSpan="9" className="empty-state">
                         No Invoices Found
                       </td>
                     </tr>
@@ -277,8 +269,7 @@ const Invoices = () => {
                           <div className="d-flex justify-content-end gap-2">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: "34px", height: "34px" }}
+                              className="btn btn-sm btn-outline-primary btn-action"
                               title="Download PDF"
                               onClick={() => handleDownloadPDF(invoice)}
                             >
@@ -286,8 +277,7 @@ const Invoices = () => {
                             </button>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center"
-                              style={{ width: "34px", height: "34px" }}
+                              className="btn btn-sm btn-outline-danger btn-action"
                               title="Delete"
                               onClick={() => deleteInvoice(invoice)}
                             >
@@ -315,7 +305,7 @@ const Invoices = () => {
             style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           >
             <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content border-0 shadow rounded-4">
+              <div className="modal-content border-0">
                 <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title fw-semibold d-flex align-items-center gap-2">
                     <FaFileInvoice className="text-primary" />
@@ -331,7 +321,7 @@ const Invoices = () => {
 
                 <div className="modal-body pt-3">
                   {formErrors.general && (
-                    <div className="alert alert-danger py-2 rounded-3">
+                    <div className="alert alert-danger py-2">
                       {formErrors.general}
                     </div>
                   )}
@@ -343,7 +333,7 @@ const Invoices = () => {
 
                     {selectedSaleId ? (
                       <div
-                        className={`form-control rounded-3 d-flex align-items-center justify-content-between ${
+                        className={`form-control d-flex align-items-center justify-content-between ${
                           formErrors.saleId ? "is-invalid" : ""
                         }`}
                       >
@@ -362,18 +352,11 @@ const Invoices = () => {
                     ) : (
                       <>
                         <div className="position-relative">
-                          <FaSearch
-                            className="position-absolute text-muted"
-                            style={{
-                              top: "50%",
-                              left: "14px",
-                              transform: "translateY(-50%)",
-                            }}
-                          />
+                          <FaSearch className="input-icon" />
                           <input
                             id="saleSearch"
                             type="text"
-                            className={`form-control ps-5 rounded-3 ${
+                            className={`form-control input-with-icon ${
                               formErrors.saleId ? "is-invalid" : ""
                             }`}
                             placeholder="Search by customer or product..."
@@ -384,11 +367,11 @@ const Invoices = () => {
                         </div>
 
                         <div
-                          className="list-group mt-2 rounded-3 shadow-sm"
+                          className="list-group mt-2 shadow-sm"
                           style={{ maxHeight: "220px", overflowY: "auto" }}
                         >
                           {filteredSales.length === 0 ? (
-                            <div className="text-center text-muted py-3 small">
+                              <div className="text-center text-muted py-3 small fw-semibold">
                               No Sales Found
                             </div>
                           ) : (
@@ -423,7 +406,7 @@ const Invoices = () => {
                 <div className="modal-footer border-0 pt-0">
                   <button
                     type="button"
-                    className="btn btn-light rounded-pill px-4"
+                    className="btn btn-light btn-app"
                     onClick={closeModal}
                     disabled={saving}
                   >
@@ -431,7 +414,7 @@ const Invoices = () => {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-primary rounded-pill px-4"
+                    className="btn btn-primary btn-app"
                     onClick={generateInvoice}
                     disabled={saving}
                   >

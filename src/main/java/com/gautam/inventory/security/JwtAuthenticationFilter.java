@@ -14,6 +14,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import io.jsonwebtoken.JwtException;
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -48,8 +50,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt =
                 authHeader.substring(7);
 
-        final String username =
-                jwtService.extractUsername(jwt);
+        final String username;
+
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (JwtException | IllegalArgumentException ex) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Invalid or expired token\"}");
+            return;
+        }
 
         if (username != null
                 && SecurityContextHolder

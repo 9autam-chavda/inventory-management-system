@@ -3,6 +3,7 @@ package com.gautam.inventory.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +25,7 @@ public class UpdatePurchaseRequest {
     private Integer quantity;
 
     @NotNull(message = "Purchase price is required")
-    @Min(value = 1)
+    @DecimalMin(value = "0.01", message = "Purchase price must be greater than 0")
     private BigDecimal purchasePrice;
 
     @NotNull(message = "Purchase date is required")
