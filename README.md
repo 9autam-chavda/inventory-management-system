@@ -268,27 +268,6 @@ http://localhost:5173
 
 ---
 
-# 📷 Screenshots
-
-Add screenshots here.
-
-```
-Login Page
-
-Dashboard
-
-Products
-
-Categories
-
-Purchases
-
-Sales
-
-Invoices
-```
-
----
 
 # 📈 Future Improvements
 
